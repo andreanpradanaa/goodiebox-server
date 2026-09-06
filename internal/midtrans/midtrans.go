@@ -8,6 +8,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 
@@ -23,13 +24,31 @@ type Client struct {
 	production bool
 }
 
-func New(serverKey, clientKey string, production bool) *Client {
+// urlRewriteClient membungkus HttpClient SDK untuk mengganti host Snap API —
+// hanya untuk pengembangan lokal dengan mock Midtrans (MIDTRANS_SNAP_API_BASE).
+type urlRewriteClient struct {
+	delegate midtrans.HttpClient
+	from, to string
+}
+
+func (c *urlRewriteClient) Call(method, url string, apiKey *string, options *midtrans.ConfigOptions, body io.Reader, result any) *midtrans.Error {
+	return c.delegate.Call(method, strings.Replace(url, c.from, c.to, 1), apiKey, options, body, result)
+}
+
+func New(serverKey, clientKey string, production bool, snapAPIBase string) *Client {
 	var sc snap.Client
 	env := midtrans.Sandbox
 	if production {
 		env = midtrans.Production
 	}
 	sc.New(serverKey, env)
+	if snapAPIBase != "" {
+		host := "https://app.sandbox.midtrans.com"
+		if production {
+			host = "https://app.midtrans.com"
+		}
+		sc.HttpClient = &urlRewriteClient{delegate: sc.HttpClient, from: host, to: snapAPIBase}
+	}
 	return &Client{snap: sc, serverKey: serverKey, clientKey: clientKey, production: production}
 }
 

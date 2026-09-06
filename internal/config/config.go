@@ -14,18 +14,22 @@ type Config struct {
 	MidtransServerKey  string
 	MidtransClientKey  string
 	MidtransProduction bool
-	BoxPriceIDR        int64
+	// MidtransSnapAPIBase override host Snap API untuk pengembangan lokal
+	// (mis. mock Midtrans di http://localhost:4010). Kosong = host resmi.
+	MidtransSnapAPIBase string
+	BoxPriceIDR         int64
 }
 
 // Load membaca konfigurasi dari environment variable dan gagal cepat
 // jika nilai wajib kosong, agar server tidak jalan dengan setup setengah jadi.
 func Load() (*Config, error) {
 	cfg := &Config{
-		Port:               envOr("PORT", "8080"),
-		DatabaseURL:        os.Getenv("DATABASE_URL"),
-		MidtransServerKey:  os.Getenv("MIDTRANS_SERVER_KEY"),
-		MidtransClientKey:  os.Getenv("MIDTRANS_CLIENT_KEY"),
-		MidtransProduction: envBool("MIDTRANS_IS_PRODUCTION", false),
+		Port:                envOr("PORT", "8080"),
+		DatabaseURL:         os.Getenv("DATABASE_URL"),
+		MidtransServerKey:   os.Getenv("MIDTRANS_SERVER_KEY"),
+		MidtransClientKey:   os.Getenv("MIDTRANS_CLIENT_KEY"),
+		MidtransProduction:  envBool("MIDTRANS_IS_PRODUCTION", false),
+		MidtransSnapAPIBase: strings.TrimRight(os.Getenv("MIDTRANS_SNAP_API_BASE"), "/"),
 	}
 
 	if cfg.DatabaseURL == "" {

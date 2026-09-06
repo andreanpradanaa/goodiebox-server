@@ -4,10 +4,10 @@ import "testing"
 
 func TestMapStatus(t *testing.T) {
 	tests := []struct {
-		txnStatus    string
-		fraudStatus  string
-		wantPayment  PaymentState
-		wantOrder    OrderState
+		txnStatus   string
+		fraudStatus string
+		wantPayment PaymentState
+		wantOrder   OrderState
 	}{
 		{"capture", "accept", PaymentSuccess, OrderPaid},
 		{"capture", "challenge", PaymentPending, OrderPending},
@@ -42,7 +42,7 @@ func TestParseGrossAmountIDR(t *testing.T) {
 		{"49000.00", 49000, false},
 		{"49000.0", 49000, false},
 		{" 49000.00 ", 49000, false},
-		{"49000.50", 0, true},  // IDR tidak punya pecahan di sistem ini
+		{"49000.50", 0, true}, // IDR tidak punya pecahan di sistem ini
 		{"abc", 0, true},
 		{"", 0, true},
 		{"0", 0, true},

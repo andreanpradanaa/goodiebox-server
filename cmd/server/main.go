@@ -44,10 +44,13 @@ func main() {
 	}
 	slog.Info("migrasi database selesai")
 
-	mtClient := midtrans.New(cfg.MidtransServerKey, cfg.MidtransClientKey, cfg.MidtransProduction)
+	mtClient := midtrans.New(cfg.MidtransServerKey, cfg.MidtransClientKey, cfg.MidtransProduction, cfg.MidtransSnapAPIBase)
 	env := "sandbox"
 	if cfg.MidtransProduction {
 		env = "production"
+	}
+	if cfg.MidtransSnapAPIBase != "" {
+		env += " (mock: " + cfg.MidtransSnapAPIBase + ")"
 	}
 	slog.Info("midtrans aktif", "env", env)
 

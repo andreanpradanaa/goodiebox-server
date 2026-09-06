@@ -61,6 +61,7 @@ Cek `curl http://localhost:8080/healthz` → `{"status":"ok"}`.
 | `MIDTRANS_IS_PRODUCTION` | `false` | `true` = production, `false` = sandbox |
 | `BOX_PRICE_IDR` | `49000` | Harga satu box (IDR), ditentukan server |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | Origin frontend untuk CORS (dipisah koma) |
+| `MIDTRANS_SNAP_API_BASE` | (kosong = host resmi) | Override host Snap API, khusus dev dengan [mock Midtrans](#e2e-dev-tanpa-server-key-asli-mock-midtrans) |
 
 ## API
 
@@ -104,7 +105,7 @@ Response `201`:
 ```
 
 - Kirim header `Idempotency-Key` (UUID) agar retry tidak membuat order ganda — order yang sama dikembalikan.
-- Frontend membuka Snap popup: `<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="...">` lalu `window.snap.popup(snap_token)`.
+- Frontend membuka Snap popup: muat `<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="...">` lalu `window.snap.pay(snap_token, { onSuccess, onPending, onError, onClose })` — implementasi lengkapnya sudah ada di `goodiebox-v2` (`src/midtransSnap.ts` + alur checkout di `src/App.tsx`).
 
 ### `GET /v1/orders/{order_code}` — polling status
 
@@ -130,7 +131,26 @@ Diisi otomatis oleh Midtrans (Dashboard → Settings → Configuration → Payme
 
 Isi box (builder state lengkap) hanya jika order sudah `paid`; selain itu `403 GIFT_LOCKED`.
 
-## Meng uji pembayaran di sandbox
+## E2E dev tanpa server key asli (mock Midtrans)
+
+Alur pembayaran penuh bisa diuji lokal tanpa akun Midtrans memakai mock di `dev/mockmidtrans`:
+
+```bash
+# Terminal 1: mock Snap API + halaman simulasi bayar di :4010
+MOCK_BACKEND_URL=http://localhost:8080 go run ./dev/mockmidtrans
+
+# Terminal 2: server mengarahkan Snap API ke mock
+MIDTRANS_SNAP_API_BASE=http://localhost:4010 make run
+
+# Terminal 3: frontend goodiebox-v2 memuat snap.js dari mock
+cd ../goodiebox-v2 && VITE_MIDTRANS_SNAP_JS_URL=http://localhost:4010/snap.js npm run dev
+```
+
+Flow yang dihasilkan identik dengan sandbox asli: klik **Buat tautan kejutan** di builder → popup simulasi bayar (menampilkan order code + nominal) → tombol **Bayar sekarang (settlement)** → mock memPOST webhook bergambar signature sha512 valid ke server → order `paid` → frontend menampilkan tautan kejutan → halaman `/gift/{slug}` terbuka. Tombol **Simulasikan pending** menguji jalur status pending.
+
+Server key mock diambil dari Basic auth request Snap, sehingga signature selalu cocok dengan `MIDTRANS_SERVER_KEY` yang dipakai server.
+
+## Menguji pembayaran di sandbox asli
 
 1. `make run` dengan server key sandbox.
 2. Buat order, buka `snap_redirect_url` di browser.

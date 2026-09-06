@@ -8,7 +8,7 @@ import (
 
 func TestVerifySignature(t *testing.T) {
 	serverKey := "SB-Mid-server-testkey"
-	c := New(serverKey, "SB-Mid-client-testkey", false)
+	c := New(serverKey, "SB-Mid-client-testkey", false, "")
 
 	valid := func(orderID, statusCode, grossAmount string) string {
 		sum := sha512.Sum512([]byte(orderID + statusCode + grossAmount + serverKey))
