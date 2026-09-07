@@ -66,6 +66,7 @@ func (s *Service) Create(ctx context.Context, req CreateRequest, idempotencyKey 
 	cust := req.CustomerForPayment()
 
 	order := &Order{
+		Status:      "pending",
 		Amount:      s.priceIDR,
 		Currency:    "IDR",
 		PayloadJSON: payload,
