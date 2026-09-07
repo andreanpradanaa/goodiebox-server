@@ -47,7 +47,10 @@ func Load() (*Config, error) {
 
 	origins := envOr("ALLOWED_ORIGINS", "http://localhost:5173")
 	for _, o := range strings.Split(origins, ",") {
-		if o = strings.TrimSpace(o); o != "" {
+		// Trim slash akhir: browser mengirim Origin tanpa trailing slash,
+		// jadi "https://contoh.com/" di env tidak akan pernah match.
+		o = strings.TrimRight(strings.TrimSpace(o), "/")
+		if o != "" {
 			cfg.AllowedOrigins = append(cfg.AllowedOrigins, o)
 		}
 	}
