@@ -1,0 +1,15 @@
+[Unit]
+Description=Goodiebox Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/goodiebox/server
+EnvironmentFile=/opt/goodiebox/.env
+Restart=on-failure
+RestartSec=5
+User=goodiebox
+WorkingDirectory=/opt/goodiebox
+
+[Install]
+WantedBy=multi-user.target
