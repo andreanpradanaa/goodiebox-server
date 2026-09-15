@@ -35,6 +35,8 @@ Konsep dari materi yang dipakai pada versi minimal ini:
 - **State machine** — payment: `pending → success | failed | expired | cancelled | refunded`, order: `pending → paid | expired | cancelled`.
 - **Amount integer IDR**, tidak pernah float.
 
+---
+
 ## Menjalankan
 
 Prasyarat: Go 1.22+, Docker.
@@ -62,6 +64,8 @@ Cek `curl http://localhost:8080/healthz` → `{"status":"ok"}`.
 | `BOX_PRICE_IDR` | `49000` | Harga satu box (IDR), ditentukan server |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | Origin frontend untuk CORS (dipisah koma) |
 | `MIDTRANS_SNAP_API_BASE` | (kosong = host resmi) | Override host Snap API, khusus dev dengan [mock Midtrans](#e2e-dev-tanpa-server-key-asli-mock-midtrans) |
+
+---
 
 ## API
 
@@ -131,6 +135,8 @@ Diisi otomatis oleh Midtrans (Dashboard → Settings → Configuration → Payme
 
 Isi box (builder state lengkap) hanya jika order sudah `paid`; selain itu `403 GIFT_LOCKED`.
 
+---
+
 ## E2E dev tanpa server key asli (mock Midtrans)
 
 Alur pembayaran penuh bisa diuji lokal tanpa akun Midtrans memakai mock di `dev/mockmidtrans`:
@@ -149,6 +155,8 @@ cd ../goodiebox-v2 && VITE_MIDTRANS_SNAP_JS_URL=http://localhost:4010/snap.js np
 Flow yang dihasilkan identik dengan sandbox asli: klik **Buat tautan kejutan** di builder → popup simulasi bayar (menampilkan order code + nominal) → tombol **Bayar sekarang (settlement)** → mock memPOST webhook bergambar signature sha512 valid ke server → order `paid` → frontend menampilkan tautan kejutan → halaman `/gift/{slug}` terbuka. Tombol **Simulasikan pending** menguji jalur status pending.
 
 Server key mock diambil dari Basic auth request Snap, sehingga signature selalu cocok dengan `MIDTRANS_SERVER_KEY` yang dipakai server.
+
+---
 
 ## Menguji pembayaran di sandbox asli
 
@@ -171,6 +179,8 @@ curl -X POST http://localhost:8080/v1/payments/notifications -H 'Content-Type: a
 }"
 ```
 
+---
+
 ## Struktur
 
 ```
@@ -183,6 +193,8 @@ internal/payments/     service webhook (dedupe, verifikasi amount, update status
 internal/api/          handler chi + CORS + error envelope
 migrations/            SQL migrasi (orders, payments, payment_notifications)
 ```
+
+---
 
 ## Deployment
 
@@ -238,6 +250,8 @@ sudo systemctl restart goodiebox-server
 sudo systemctl status goodiebox-server
 sudo journalctl -u goodiebox-server -n 10
 ```
+
+---
 
 ## Production Operations
 
@@ -398,6 +412,8 @@ sudo -u goodiebox psql goodiebox -c "SELECT pg_size_pretty(pg_database_size('goo
 # Nginx active connections
 sudo netstat -an | grep :80 | grep ESTABLISHED | wc -l
 ```
+
+---
 
 ## Roadmap (sesuai materi system design)
 
