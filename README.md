@@ -184,6 +184,61 @@ internal/api/          handler chi + CORS + error envelope
 migrations/            SQL migrasi (orders, payments, payment_notifications)
 ```
 
+## Deployment
+
+### Option 1: GitHub Actions (Automated)
+
+Setiap push ke `main` → GitHub Actions auto-build & deploy:
+
+```bash
+git push origin main
+# Lihat GitHub → Actions tab untuk progress
+```
+
+Butuh GitHub Secrets setup:
+- `VPS_HOST` = `202.155.16.133`
+- `VPS_USER` = `deploy`
+- `VPS_SSH_KEY` = private key SSH
+- `VPS_PORT` = `22`
+
+### Option 2: Manual SCP Deploy
+
+Build di local, transfer ke VPS manual:
+
+**1. Build static binary di local:**
+
+```bash
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/server ./cmd/server
+```
+
+Verify file ada:
+
+```bash
+ls -lh bin/server
+```
+
+**2. Transfer ke VPS dengan SCP:**
+
+```bash
+scp -i ~/.ssh/goodiebox-deploy bin/server deploy@202.155.16.133:/tmp/goodiebox-server
+```
+
+**3. Di VPS, install & restart:**
+
+```bash
+ssh deploy@202.155.16.133  # password: deploy
+sudo install -m 755 /tmp/goodiebox-server /opt/goodiebox/server
+sudo chown goodiebox:goodiebox /opt/goodiebox/server
+sudo systemctl restart goodiebox-server
+```
+
+**4. Verify running:**
+
+```bash
+sudo systemctl status goodiebox-server
+sudo journalctl -u goodiebox-server -n 10
+```
+
 ## Production Operations
 
 ### Environment Variables (ubah `.env`)
