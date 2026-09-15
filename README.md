@@ -184,6 +184,166 @@ internal/api/          handler chi + CORS + error envelope
 migrations/            SQL migrasi (orders, payments, payment_notifications)
 ```
 
+## Production Operations
+
+### Environment Variables (ubah `.env`)
+
+**SSH ke VPS:**
+
+```bash
+ssh deploy@202.155.16.133  # password: deploy
+sudo nano /opt/goodiebox/.env
+```
+
+**Edit variables** yang perlu, **save** (`Ctrl+X` → `Y` → Enter), **restart service:**
+
+```bash
+sudo systemctl restart goodiebox-server
+```
+
+**Common changes:**
+
+| Variable | Kapan ubah |
+|----------|-----------|
+| `ALLOWED_ORIGINS` | Frontend pindah domain |
+| `BOX_PRICE_IDR` | Update harga box |
+| `MIDTRANS_SERVER_KEY` | Switch sandbox ↔ production |
+| `MIDTRANS_IS_PRODUCTION` | Go live (set ke `true`) |
+
+### Restart Services
+
+**Backend (goodiebox-server):**
+
+```bash
+sudo systemctl restart goodiebox-server
+sudo systemctl status goodiebox-server
+```
+
+**Nginx:**
+
+```bash
+sudo systemctl reload nginx           # graceful reload (no downtime)
+sudo systemctl restart nginx          # full restart (moment of downtime)
+sudo systemctl status nginx
+```
+
+**Database (PostgreSQL):**
+
+```bash
+sudo systemctl restart postgresql
+```
+
+### Logs & Debugging
+
+**Backend logs (real-time):**
+
+```bash
+sudo journalctl -u goodiebox-server -f
+```
+
+**Last 50 lines:**
+
+```bash
+sudo journalctl -u goodiebox-server -n 50
+```
+
+**Filter errors only:**
+
+```bash
+sudo journalctl -u goodiebox-server | grep ERROR
+```
+
+**Nginx error logs:**
+
+```bash
+sudo tail -f /var/log/nginx/error.log
+```
+
+**Test endpoint:**
+
+```bash
+curl https://api.specialdigitalthings.com/healthz
+curl https://api.specialdigitalthings.com/v1/orders/test -X GET
+```
+
+### Verify Services Running
+
+```bash
+sudo systemctl status goodiebox-server
+sudo systemctl status nginx
+sudo systemctl status postgresql
+
+# Check listening ports
+sudo lsof -i :8080       # backend
+sudo lsof -i :80        # nginx HTTP
+sudo lsof -i :443       # nginx HTTPS
+sudo lsof -i :5432      # postgres
+```
+
+### SSL Certificate Renewal
+
+Let's Encrypt auto-renew, tapi verify:
+
+```bash
+sudo certbot renew --dry-run
+```
+
+Check certificate expiry:
+
+```bash
+sudo certbot certificates
+```
+
+### Database Backup
+
+**Manual backup:**
+
+```bash
+sudo -u postgres pg_dump goodiebox > ~/goodiebox_backup_$(date +%Y%m%d).sql
+```
+
+**Restore:**
+
+```bash
+sudo -u postgres psql goodiebox < goodiebox_backup_20260915.sql
+```
+
+**Check database:**
+
+```bash
+sudo -u goodiebox psql goodiebox -c "SELECT COUNT(*) FROM orders; SELECT COUNT(*) FROM payments;"
+```
+
+### Deployment Checklist
+
+Sebelum update ke production:
+
+- [ ] Test di local dengan `make run`
+- [ ] Test migrations di staging VPS
+- [ ] Verify `.env` variables sudah correct
+- [ ] Check Midtrans webhook URL endpoint
+- [ ] Verify ALLOWED_ORIGINS cocok dengan frontend domain
+- [ ] Monitor logs 10 menit setelah deploy: `sudo journalctl -u goodiebox-server -f`
+
+### Monitoring Quick Commands
+
+```bash
+# Service health
+curl https://api.specialdigitalthings.com/healthz
+
+# Check recent orders
+sudo -u goodiebox psql goodiebox -c "SELECT * FROM orders ORDER BY created_at DESC LIMIT 5;"
+
+# Check recent payments
+sudo -u goodiebox psql goodiebox -c "SELECT * FROM payment_notifications ORDER BY created_at DESC LIMIT 5;"
+
+# Database size
+sudo -u goodiebox psql goodiebox -c "SELECT pg_size_pretty(pg_database_size('goodiebox'));"
+
+# Nginx active connections
+sudo netstat -an | grep :80 | grep ESTABLISHED | wc -l
+```
+
 ## Roadmap (sesuai materi system design)
 
 Versi minimal ini sengaja satu service. Urutan pengembangan lanjutan:
